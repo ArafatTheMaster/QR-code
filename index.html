@@ -511,7 +511,16 @@ input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-vis
     });
   }
   function save(name,data){
-    if(!DL){ toast('Saving is unavailable in this view. Use Copy SVG code instead.'); return Promise.resolve(); }
+    if(!DL){
+      try{
+        var blob=(data instanceof Blob)?data:new Blob([data],{type:'image/svg+xml'});
+        var url=URL.createObjectURL(blob), a=document.createElement('a');
+        a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){URL.revokeObjectURL(url);},4000);
+        toast('Saved '+name);
+      }catch(e){ toast('Could not save the file.'); }
+      return Promise.resolve();
+    }
     return DL.save({filename:name,data:data}).then(function(){ toast('Saved '+name); },function(e){
       if(e&&e.code==='declined') return;
       toast('Could not save: '+((e&&e.message)||'try again'));
