@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arafat QR Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: controls column on the left in numbered steps, a sticky preview stage on the right. */
+:root{
+  --bg:#0A0D1C; --panel:#11152A; --panel2:#171C37; --line:#262C4D;
+  --text:#ECEAF6; --muted:#9097B8; --gold:#D8B46A; --gold-deep:#B48F46;
+  --ok:#5FD3A0; --warn:#F0B35A; --bad:#F27A7A;
+  --display:'Fraunces',Georgia,serif;
+  --body:'Manrope','Noto Sans Bengali',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background-color:var(--bg);
+  background-image:radial-gradient(900px 480px at 85% -10%,rgba(216,180,106,.13),transparent 60%),radial-gradient(700px 420px at -5% 10%,rgba(80,92,190,.16),transparent 60%);
+  background-repeat:no-repeat;
+  color:var(--text); font:500 15px/1.55 var(--body);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 20px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px 0 30px}
+.brand{display:flex;align-items:center;gap:12px;font:600 20px var(--display);letter-spacing:.2px}
+.brand svg{width:34px;height:34px}
+.brand em{font-style:normal;color:var(--gold)}
+.pill{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(216,180,106,.35);padding:6px 12px;border-radius:99px}
+h1{font:500 clamp(30px,4.6vw,46px)/1.1 var(--display);margin:0 0 10px;text-wrap:balance;max-width:16em}
+h1 span{color:var(--gold)}
+.lede{color:var(--muted);margin:0 0 30px;max-width:46em;text-wrap:pretty}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:28px;align-items:start}
+.controls{display:flex;flex-direction:column;gap:18px;min-width:0}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:22px}
+.step{display:flex;align-items:baseline;gap:12px;margin:0 0 16px}
+.step b{font:600 13px var(--display);color:var(--gold);letter-spacing:.1em}
+.step h2{font:600 17px var(--body);margin:0}
+.step small{color:var(--muted);margin-left:auto;font-size:13px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:thin}
+.tab{flex:0 0 auto;appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);font:600 14px var(--body);padding:9px 15px;border-radius:12px;cursor:pointer;transition:.15s}
+.tab:hover{color:var(--text);border-color:#3a4272}
+.tab[aria-pressed="true"]{background:rgba(216,180,106,.12);border-color:var(--gold);color:var(--gold)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.f.full{grid-column:1/-1}
+label,.lab{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+input[type=text],input[type=url],input[type=email],input[type=tel],input[type=password],textarea,select{
+  width:100%;background:#0D1124;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font:500 15px var(--body);transition:border-color .15s, box-shadow .15s}
+textarea{min-height:96px;resize:vertical}
+input::placeholder,textarea::placeholder{color:#5d6489}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.check{flex-direction:row;align-items:center;gap:10px;padding-top:24px}
+.check input{width:18px;height:18px;accent-color:var(--gold)}
+.check label{font-size:14px;color:var(--text);font-weight:500}
+.row{display:flex;flex-wrap:wrap;gap:22px 28px}
+.blk{display:flex;flex-direction:column;gap:8px;min-width:0}
+.seg{display:inline-flex;background:#0D1124;border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:600 13px var(--body);padding:8px 13px;border-radius:9px;cursor:pointer;transition:.15s}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed="true"]{background:var(--gold);color:#1b1608}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.sw{width:46px;height:46px;border-radius:14px;border:2px solid var(--line);cursor:pointer;padding:0;position:relative;transition:.15s}
+.sw:hover{transform:translateY(-2px)}
+.sw[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 3px rgba(216,180,106,.25)}
+.color{display:flex;align-items:center;gap:10px;background:#0D1124;border:1px solid var(--line);border-radius:12px;padding:6px 12px 6px 6px}
+.color input{width:34px;height:34px;border:0;padding:0;background:none;border-radius:8px;cursor:pointer}
+.color span{font:600 13px ui-monospace,Menlo,Consolas,monospace;color:var(--text);text-transform:uppercase}
+.tog{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);font-weight:500;cursor:pointer}
+.tog input{width:17px;height:17px;accent-color:var(--gold)}
+.range{display:flex;align-items:center;gap:12px;min-width:220px}
+.range input{flex:1;accent-color:var(--gold)}
+.range output{font:600 13px ui-monospace,Menlo,monospace;color:var(--gold);min-width:42px;text-align:right}
+.btn{appearance:none;border:1px solid var(--line);background:transparent;color:var(--text);font:600 14px var(--body);padding:11px 16px;border-radius:12px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn.gold{background:linear-gradient(135deg,#F0D690,var(--gold) 55%,var(--gold-deep));color:#1b1608;border-color:transparent;box-shadow:0 8px 24px -8px rgba(216,180,106,.55)}
+.btn.gold:hover{filter:brightness(1.06);color:#1b1608}
+.btn svg{width:17px;height:17px}
+.logo-row{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.logo-thumb{width:46px;height:46px;border-radius:12px;border:1px dashed #3a4272;background:#0D1124 center/contain no-repeat;display:none}
+.note{font-size:13px;color:var(--muted);margin:12px 0 0}
+.preview{position:sticky;top:20px}
+.stage{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:18px}
+.frame{border-radius:18px;overflow:hidden;aspect-ratio:1;width:100%;box-shadow:0 0 0 6px rgba(255,255,255,.04),0 30px 60px -24px rgba(0,0,0,.7);background:#fff;display:grid;place-items:center}
+.frame.checker{background:repeating-conic-gradient(#d9dbe6 0 25%,#fff 0 50%) 0 0/20px 20px}
+.frame svg{display:block;width:100%;height:100%}
+.empty{padding:30px;text-align:center;color:#555c80;font-weight:600}
+.meta{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:12.5px;padding:5px 11px;border-radius:99px;border:1px solid}
+.badge i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.badge.ok{color:var(--ok);border-color:rgba(95,211,160,.4);background:rgba(95,211,160,.08)}
+.badge.warn{color:var(--warn);border-color:rgba(240,179,90,.45);background:rgba(240,179,90,.08)}
+.badge.bad{color:var(--bad);border-color:rgba(242,122,122,.45);background:rgba(242,122,122,.08)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions .full{grid-column:1/-1}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:#1d2345;border:1px solid var(--gold);color:var(--text);padding:12px 18px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:10;max-width:90vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px}
+.feat div{border:1px solid var(--line);border-radius:16px;padding:16px 18px;background:rgba(17,21,42,.6)}
+.feat b{display:block;font:600 15px var(--display);color:var(--gold);margin-bottom:4px}
+.feat span{font-size:13.5px;color:var(--muted)}
+.foot{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);text-align:center;color:var(--muted);font-size:13.5px}
+.foot p{margin:0 0 6px}
+.foot strong{color:var(--text);font-weight:700}
+.foot a{color:var(--gold);font-weight:700;text-decoration:none;border-bottom:1px solid rgba(216,180,106,.4)}
+.foot a:hover{border-bottom-color:var(--gold)}
+.foot .legal{font-size:12.5px;opacity:.85}
+@media (max-width:960px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .preview{position:static;order:-1}
+  .feat{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .fields{grid-template-columns:1fr}
+  .card{padding:18px}
+  .pill{display:none}
+  .range{min-width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="9" fill="none" stroke="#D8B46A" stroke-width="1.6"/><rect x="7" y="7" width="8" height="8" rx="2.2" fill="#D8B46A"/><rect x="19" y="7" width="8" height="8" rx="2.2" fill="#D8B46A"/><rect x="7" y="19" width="8" height="8" rx="2.2" fill="#D8B46A"/><circle cx="23" cy="23" r="2.6" fill="#D8B46A"/></svg>
+      <span>Arafat <em>QR</em> Studio</span>
+    </div>
+    <span class="pill">Free · No sign-up</span>
+  </header>
+
+  <h1>Make a QR code that looks <span>as good</span> as your brand.</h1>
+  <p class="lede">Links, Wi-Fi, contacts, WhatsApp and more. Pick shapes and colors, add your logo, then download a sharp PNG or a print-ready SVG. Everything runs in your browser, so your data never leaves your device. Bengali and other languages work too.</p>
+
+  <div class="grid">
+    <div class="controls">
+      <section class="card" aria-labelledby="h-content">
+        <div class="step"><b>01</b><h2 id="h-content">Content</h2><small id="bytes"></small></div>
+        <div class="tabs" id="tabs" role="group" aria-label="QR code type"></div>
+        <div class="fields" id="fields"></div>
+      </section>
+
+      <section class="card" aria-labelledby="h-design">
+        <div class="step"><b>02</b><h2 id="h-design">Design</h2></div>
+        <div class="swatches" id="swatches" role="group" aria-label="Color presets"></div>
+        <div class="row">
+          <div class="blk"><span class="lab">Dot shape</span>
+            <div class="seg" data-key="dot" role="group" aria-label="Dot shape">
+              <button data-v="square">Square</button><button data-v="rounded">Rounded</button><button data-v="dots">Dots</button><button data-v="connected">Smooth</button>
+            </div></div>
+          <div class="blk"><span class="lab">Corner eyes</span>
+            <div class="seg" data-key="eye" role="group" aria-label="Corner eye shape">
+              <button data-v="square">Square</button><button data-v="rounded">Rounded</button><button data-v="circle">Circle</button>
+            </div></div>
+        </div>
+        <div class="row" style="margin-top:22px">
+          <div class="blk"><span class="lab">Dot color</span>
+            <label class="color"><input type="color" id="fg1" aria-label="Dot color"><span id="fg1v"></span></label></div>
+          <div class="blk" id="fg2blk"><span class="lab">Gradient end</span>
+            <label class="color"><input type="color" id="fg2" aria-label="Gradient end color"><span id="fg2v"></span></label></div>
+          <div class="blk"><span class="lab">Eye color</span>
+            <label class="color"><input type="color" id="eyeColor" aria-label="Eye color"><span id="eyev"></span></label></div>
+          <div class="blk"><span class="lab">Background</span>
+            <label class="color"><input type="color" id="bg" aria-label="Background color"><span id="bgv"></span></label></div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <label class="tog"><input type="checkbox" id="grad"> Use gradient</label>
+          <label class="tog"><input type="checkbox" id="eyeMatch"> Eyes match dots</label>
+          <label class="tog"><input type="checkbox" id="transparent"> Transparent background</label>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-logo">
+        <div class="step"><b>03</b><h2 id="h-logo">Logo</h2><small>Optional</small></div>
+        <div class="logo-row">
+          <div class="logo-thumb" id="thumb"></div>
+          <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden>
+          <button class="btn" id="logoBtn" type="button">Upload logo</button>
+          <button class="btn" id="logoClear" type="button" hidden>Remove</button>
+          <div class="range" id="logoRange" hidden>
+            <label for="logoScale" class="lab">Size</label>
+            <input type="range" id="logoScale" min="12" max="30" step="1">
+            <output id="logoScaleV"></output>
+          </div>
+        </div>
+        <p class="note">With a logo, the error correction is raised to High so the code still scans. Test the final code with a phone before printing.</p>
+      </section>
+
+      <section class="card" aria-labelledby="h-out">
+        <div class="step"><b>04</b><h2 id="h-out">Output</h2></div>
+        <div class="row">
+          <div class="blk"><span class="lab">Error correction</span>
+            <div class="seg" data-key="ecc" role="group" aria-label="Error correction level">
+              <button data-v="L">Low</button><button data-v="M">Medium</button><button data-v="Q">Quartile</button><button data-v="H">High</button>
+            </div></div>
+          <div class="blk"><span class="lab">PNG size</span>
+            <div class="seg" data-key="size" role="group" aria-label="PNG size in pixels">
+              <button data-v="512">512</button><button data-v="1024">1024</button><button data-v="2048">2048</button><button data-v="4096">4096</button>
+            </div></div>
+          <div class="blk"><span class="lab">Quiet zone</span>
+            <div class="range"><input type="range" id="margin" min="0" max="8" step="1" aria-label="Quiet zone in modules"><output id="marginV"></output></div></div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="preview" aria-label="Live preview">
+      <div class="stage">
+        <div class="frame" id="frame"></div>
+        <div class="meta"><span id="info"></span><span class="badge ok" id="badge"><i></i><span>Scan-ready</span></span></div>
+        <div class="actions">
+          <button class="btn gold" id="dlPng" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg>Download PNG</button>
+          <button class="btn" id="dlSvg" type="button">Download SVG</button>
+          <button class="btn full" id="copySvg" type="button">Copy SVG code</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="feat">
+    <div><b>Print ready</b><span>SVG stays sharp at any size, from a business card to a billboard.</span></div>
+    <div><b>Private by design</b><span>Codes are built on your device. Nothing is uploaded or stored.</span></div>
+    <div><b>Never expires</b><span>These are static codes with no tracking and no subscription behind them.</span></div>
+  </div>
+
+  <footer class="foot">
+    <p><strong>Arafat QR Studio</strong>, &copy; 2026 Arafat Ahmed. All rights reserved.</p>
+    <p>Developed by <a href="https://wa.me/8801786945337" target="_blank" rel="noopener noreferrer">Arafat Ahmed</a></p>
+    <p class="legal">Unauthorized copying, redistribution or modification of this tool and its design is prohibited.</p>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+(function(){
+  var $ = function(s){return document.querySelector(s)};
+  var $$ = function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+
+  /* UTF-8 so Bengali, Arabic, emoji and other scripts encode correctly */
+  if (window.qrcode) {
+    qrcode.stringToBytes = function(s){ return Array.prototype.slice.call(new TextEncoder().encode(s)); };
+  }
+
+  var esc = function(s){ return String(s).replace(/([\\;,:"])/g,'\\$1'); };
+
+  var TYPES = {
+    url:{label:'Website', fields:[
+      {k:'url',l:'Link',ph:'https://example.com',t:'url',full:1,v:'https://example.com'}],
+      build:function(v){var u=(v.url||'').trim(); if(!u) return ''; if(!/^[a-z][a-z0-9+.\-]*:/i.test(u)) u='https://'+u; return u;}},
+    text:{label:'Text', fields:[
+      {k:'text',l:'Message',ph:'Type anything, in any language',t:'area',full:1,v:'স্বাগতম! Welcome to our shop.'}],
+      build:function(v){return v.text||'';}},
+    wifi:{label:'Wi-Fi', fields:[
+      {k:'ssid',l:'Network name',ph:'My Wi-Fi',t:'text',v:'Home Network'},
+      {k:'pass',l:'Password',ph:'Password',t:'text',v:'welcome2026'},
+      {k:'sec',l:'Security',t:'select',opts:[['WPA','WPA / WPA2 / WPA3'],['WEP','WEP'],['nopass','No password']],v:'WPA'},
+      {k:'hidden',l:'Hidden network',t:'check',v:false}],
+      build:function(v){ if(!(v.ssid||'').trim()) return '';
+        return 'WIFI:T:'+(v.sec||'WPA')+';S:'+esc(v.ssid)+';'+(v.sec==='nopass'?'':'P:'+esc(v.pass||'')+';')+'H:'+(v.hidden?'true':'false')+';;'; }},
+    contact:{label:'Contact', fields:[
+      {k:'name',l:'Full name',ph:'Full name',t:'text',v:'Rahim Uddin'},
+      {k:'org',l:'Company',ph:'Company',t:'text',v:'Padma Studio'},
+      {k:'tel',l:'Phone',ph:'+8801700000000',t:'tel',v:'+8801700000000'},
+      {k:'email',l:'Email',ph:'name@example.com',t:'email',v:'rahim@example.com'},
+      {k:'web',l:'Website',ph:'https://example.com',t:'url',full:1,v:'https://example.com'}],
+      build:function(v){ if(!(v.name||'').trim()) return '';
+        var n=v.name.trim().split(/\s+/), last=n.length>1?n.pop():'', first=n.join(' ');
+        var o=['BEGIN:VCARD','VERSION:3.0','N:'+last+';'+first+';;;','FN:'+v.name.trim()];
+        if(v.org) o.push('ORG:'+v.org); if(v.tel) o.push('TEL:'+v.tel); if(v.email) o.push('EMAIL:'+v.email); if(v.web) o.push('URL:'+v.web);
+        o.push('END:VCARD'); return o.join('\n'); }},
+    email:{label:'Email', fields:[
+      {k:'to',l:'To',ph:'name@example.com',t:'email',full:1,v:'hello@example.com'},
+      {k:'sub',l:'Subject',ph:'Subject',t:'text',full:1,v:'Hello'},
+      {k:'body',l:'Message',ph:'Message',t:'area',full:1,v:''}],
+      build:function(v){ if(!(v.to||'').trim()) return ''; var p=[];
+        if(v.sub) p.push('subject='+encodeURIComponent(v.sub)); if(v.body) p.push('body='+encodeURIComponent(v.body));
+        return 'mailto:'+v.to.trim()+(p.length?'?'+p.join('&'):''); }},
+    phone:{label:'Phone', fields:[
+      {k:'tel',l:'Phone number',ph:'+8801700000000',t:'tel',full:1,v:'+8801700000000'}],
+      build:function(v){var t=(v.tel||'').replace(/[\s\-()]/g,''); return t?'tel:'+t:'';}},
+    whatsapp:{label:'WhatsApp', fields:[
+      {k:'num',l:'Number with country code',ph:'8801700000000',t:'tel',full:1,v:'8801700000000'},
+      {k:'msg',l:'Pre-filled message',ph:'Hello!',t:'area',full:1,v:'Hello! I found you through your QR code.'}],
+      build:function(v){var d=(v.num||'').replace(/\D/g,''); if(!d) return '';
+        return 'https://wa.me/'+d+(v.msg?'?text='+encodeURIComponent(v.msg):''); }}
+  };
+
+  var PRESETS = [
+    {n:'Ink',      fg1:'#0B1220',fg2:'#0B1220',grad:false,bg:'#FFFFFF'},
+    {n:'Sapphire', fg1:'#12307A',fg2:'#12307A',grad:false,bg:'#FFFFFF'},
+    {n:'Emerald',  fg1:'#0B6B4F',fg2:'#0B6B4F',grad:false,bg:'#F4FBF7'},
+    {n:'Crimson',  fg1:'#9B1230',fg2:'#9B1230',grad:false,bg:'#FFF8F6'},
+    {n:'Aurora',   fg1:'#1D3FBF',fg2:'#7A1FA8',grad:true, bg:'#FFFFFF'},
+    {n:'Sunset',   fg1:'#C2261F',fg2:'#E08A12',grad:true, bg:'#FFFBF3'},
+    {n:'Lagoon',   fg1:'#0A7C86',fg2:'#1C3D9E',grad:true, bg:'#F3FBFC'}
+  ];
+
+  var S = {type:'url',vals:{},dot:'connected',eye:'rounded',fg1:'#12307A',fg2:'#12307A',grad:false,eyeMatch:true,eyeColor:'#12307A',
+           bg:'#FFFFFF',transparent:false,ecc:'Q',margin:3,size:1024,logo:null,logoScale:20,preset:1};
+  Object.keys(TYPES).forEach(function(t){ S.vals[t]={}; TYPES[t].fields.forEach(function(f){ S.vals[t][f.k]=f.v; }); });
+
+  var current = {svgFor:function(){return ''}, ok:false};
+  var DL = null;
+
+  /* ---------- UI: tabs & fields ---------- */
+  function renderTabs(){
+    var box=$('#tabs'); box.innerHTML='';
+    Object.keys(TYPES).forEach(function(k){
+      var b=document.createElement('button'); b.type='button'; b.className='tab'; b.textContent=TYPES[k].label;
+      b.setAttribute('aria-pressed', String(S.type===k));
+      b.onclick=function(){ S.type=k; renderTabs(); renderFields(); update(); };
+      box.appendChild(b);
+    });
+  }
+  function renderFields(){
+    var box=$('#fields'); box.innerHTML='';
+    TYPES[S.type].fields.forEach(function(f){
+      var w=document.createElement('div'); w.className='f'+(f.full?' full':'')+(f.t==='check'?' check':'');
+      var id='f-'+f.k, el, lab=document.createElement('label'); lab.htmlFor=id; lab.textContent=f.l;
+      if(f.t==='area'){ el=document.createElement('textarea'); }
+      else if(f.t==='select'){ el=document.createElement('select'); f.opts.forEach(function(o){var op=document.createElement('option'); op.value=o[0]; op.textContent=o[1]; el.appendChild(op);}); }
+      else { el=document.createElement('input'); el.type=f.t==='check'?'checkbox':(f.t==='password'?'text':f.t); }
+      el.id=id; if(f.ph) el.placeholder=f.ph;
+      var cur=S.vals[S.type][f.k];
+      if(f.t==='check'){ el.checked=!!cur; } else { el.value=cur==null?'':cur; }
+      el.addEventListener(f.t==='check'||f.t==='select'?'change':'input',function(){
+        S.vals[S.type][f.k]= f.t==='check'? el.checked : el.value;
+        if(f.k==='sec') {} update();
+      });
+      if(f.t==='check'){ w.appendChild(el); w.appendChild(lab); } else { w.appendChild(lab); w.appendChild(el); }
+      box.appendChild(w);
+    });
+    var pass=$('#f-pass'); if(pass) pass.disabled = (S.vals.wifi.sec==='nopass');
+    var sec=$('#f-sec'); if(sec) sec.addEventListener('change',function(){ var p=$('#f-pass'); if(p) p.disabled=(sec.value==='nopass'); });
+  }
+
+  function renderSwatches(){
+    var box=$('#swatches'); box.innerHTML='';
+    PRESETS.forEach(function(p,i){
+      var b=document.createElement('button'); b.type='button'; b.className='sw'; b.title=p.n; b.setAttribute('aria-label',p.n+' color preset');
+      b.style.background='linear-gradient(135deg,'+p.fg1+','+p.fg2+')';
+      b.setAttribute('aria-pressed',String(S.preset===i));
+      b.onclick=function(){ S.preset=i; S.fg1=p.fg1; S.fg2=p.fg2; S.grad=p.grad; S.bg=p.bg; S.eyeColor=p.fg1; S.transparent=false; syncControls(); update(); };
+      box.appendChild(b);
+    });
+  }
+
+  function syncControls(){
+    $$('.seg').forEach(function(seg){
+      var key=seg.dataset.key;
+      Array.prototype.forEach.call(seg.querySelectorAll('button'),function(b){ b.setAttribute('aria-pressed',String(String(S[key])===b.dataset.v)); });
+    });
+    ['fg1','fg2','eyeColor','bg'].forEach(function(k){ $('#'+k).value=S[k]; });
+    $('#fg1v').textContent=S.fg1; $('#fg2v').textContent=S.fg2; $('#eyev').textContent=S.eyeColor; $('#bgv').textContent=S.bg;
+    $('#grad').checked=S.grad; $('#eyeMatch').checked=S.eyeMatch; $('#transparent').checked=S.transparent;
+    $('#fg2blk').style.display=S.grad?'':'none';
+    $('#eyeColor').closest('.blk').style.display=S.eyeMatch?'none':'';
+    $('#bg').disabled=S.transparent;
+    $('#margin').value=S.margin; $('#marginV').textContent=S.margin+' mod';
+    $('#logoScale').value=S.logoScale; $('#logoScaleV').textContent=S.logoScale+'%';
+    $('#logoRange').hidden=!S.logo; $('#logoClear').hidden=!S.logo;
+    var th=$('#thumb'); th.style.display=S.logo?'block':'none'; if(S.logo) th.style.backgroundImage='url("'+S.logo+'")';
+    $('#logoBtn').textContent=S.logo?'Change logo':'Upload logo';
+    Array.prototype.forEach.call(document.querySelectorAll('#swatches .sw'),function(b,i){ b.setAttribute('aria-pressed',String(S.preset===i)); });
+  }
+
+  /* ---------- SVG builder ---------- */
+  function f3(v){ return +v.toFixed(3); }
+  function rp(x,y,w,h,tl,tr,br,bl){
+    return 'M'+f3(x+tl)+' '+f3(y)+'H'+f3(x+w-tr)+'A'+tr+' '+tr+' 0 0 1 '+f3(x+w)+' '+f3(y+tr)+
+      'V'+f3(y+h-br)+'A'+br+' '+br+' 0 0 1 '+f3(x+w-br)+' '+f3(y+h)+
+      'H'+f3(x+bl)+'A'+bl+' '+bl+' 0 0 1 '+f3(x)+' '+f3(y+h-bl)+
+      'V'+f3(y+tl)+'A'+tl+' '+tl+' 0 0 1 '+f3(x+tl)+' '+f3(y)+'Z';
+  }
+  function rr(x,y,w,h,r){ return rp(x,y,w,h,r,r,r,r); }
+  function circ(cx,cy,r){ return 'M'+f3(cx-r)+' '+f3(cy)+'a'+r+' '+r+' 0 1 0 '+f3(2*r)+' 0a'+r+' '+r+' 0 1 0 '+f3(-2*r)+' 0Z'; }
+
+  function effEcc(){ return S.logo ? 'H' : S.ecc; }
+
+  function makeQR(){
+    var data = TYPES[S.type].build(S.vals[S.type]);
+    if(!data) return {err:'Enter some content to see your QR code.'};
+    if(!window.qrcode) return {err:'The QR engine could not load. Check your connection and reload.'};
+    try{
+      var qr=qrcode(0,effEcc()); qr.addData(data,'Byte'); qr.make();
+      return {qr:qr,bytes:new TextEncoder().encode(data).length};
+    }catch(e){
+      return {err:'That is too much content for this error-correction level. Shorten it or choose a lower level.'};
+    }
+  }
+
+  function buildSVG(qr,px){
+    var n=qr.getModuleCount(), m=S.margin, T=n+2*m;
+    var isEye=function(r,c){return (r<7&&c<7)||(r<7&&c>=n-7)||(r>=n-7&&c<7);};
+    var L=0,lo=0,hi=0;
+    if(S.logo){ L=Math.ceil(n*S.logoScale/100); if((n-L)%2) L++; lo=(n-L)/2; hi=lo+L; }
+    var inLogo=function(r,c){return L&&r>=lo&&r<hi&&c>=lo&&c<hi;};
+    var on=function(r,c){return r>=0&&c>=0&&r<n&&c<n&&!isEye(r,c)&&!inLogo(r,c)&&qr.isDark(r,c);};
+    var d='';
+    for(var r=0;r<n;r++){ for(var c=0;c<n;c++){
+      if(!on(r,c)) continue;
+      var x=c+m, y=r+m;
+      if(S.dot==='square') d+='M'+x+' '+y+'h1v1h-1z';
+      else if(S.dot==='rounded') d+=rr(x+.05,y+.05,.9,.9,.28);
+      else if(S.dot==='dots') d+=circ(x+.5,y+.5,.43);
+      else {
+        var u=on(r-1,c),dn=on(r+1,c),l=on(r,c-1),rt=on(r,c+1);
+        d+=rp(x,y,1,1,(!u&&!l)?.5:0,(!u&&!rt)?.5:0,(!dn&&!rt)?.5:0,(!dn&&!l)?.5:0);
+      }
+    }}
+    var eyes='';
+    [[0,0],[0,n-7],[n-7,0]].forEach(function(p){
+      var x=p[1]+m, y=p[0]+m;
+      if(S.eye==='square') eyes+=rp(x,y,7,7,0,0,0,0)+rp(x+1,y+1,5,5,0,0,0,0)+rp(x+2,y+2,3,3,0,0,0,0);
+      else if(S.eye==='rounded') eyes+=rr(x,y,7,7,2.2)+rr(x+1,y+1,5,5,1.4)+rr(x+2,y+2,3,3,.95);
+      else eyes+=circ(x+3.5,y+3.5,3.5)+circ(x+3.5,y+3.5,2.5)+circ(x+3.5,y+3.5,1.5);
+    });
+    var size=px?(' width="'+px+'" height="'+px+'"'):'';
+    var fill=S.grad?'url(#g)':S.fg1;
+    var eyeFill=S.eyeMatch?fill:S.eyeColor;
+    var s='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 '+T+' '+T+'"'+size+'>';
+    if(S.grad) s+='<defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="'+T+'" y2="'+T+'"><stop offset="0" stop-color="'+S.fg1+'"/><stop offset="1" stop-color="'+S.fg2+'"/></linearGradient></defs>';
+    if(!S.transparent) s+='<rect width="'+T+'" height="'+T+'" fill="'+S.bg+'"/>';
+    s+='<path d="'+d+'" fill="'+fill+'"'+(S.dot==='square'?' shape-rendering="crispEdges"':'')+'/>';
+    s+='<path d="'+eyes+'" fill="'+eyeFill+'" fill-rule="evenodd"/>';
+    if(S.logo){
+      var lx=lo+m, pad=L*0.08;
+      s+='<rect x="'+f3(lx)+'" y="'+f3(lx)+'" width="'+L+'" height="'+L+'" rx="'+f3(L*.22)+'" fill="'+(S.transparent?'#FFFFFF':S.bg)+'"/>';
+      s+='<image href="'+S.logo+'" xlink:href="'+S.logo+'" x="'+f3(lx+pad)+'" y="'+f3(lx+pad)+'" width="'+f3(L-2*pad)+'" height="'+f3(L-2*pad)+'" preserveAspectRatio="xMidYMid meet"/>';
+    }
+    return s+'</svg>';
+  }
+
+  /* ---------- contrast ---------- */
+  function lum(hex){
+    var h=hex.replace('#',''), v=[0,2,4].map(function(i){var c=parseInt(h.substr(i,2),16)/255; return c<=.03928?c/12.92:Math.pow((c+.055)/1.055,2.4);});
+    return .2126*v[0]+.7152*v[1]+.0722*v[2];
+  }
+  function ratio(a,b){ var x=lum(a),y=lum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); }
+  function health(){
+    var bg=S.transparent?'#FFFFFF':S.bg;
+    var cols=[S.fg1]; if(S.grad) cols.push(S.fg2); if(!S.eyeMatch) cols.push(S.eyeColor);
+    var worst=Math.min.apply(null,cols.map(function(c){return ratio(c,bg);}));
+    var inverted=cols.some(function(c){return lum(c)>lum(bg);});
+    if(inverted) return ['bad','Inverted colors, many scanners fail'];
+    if(worst<3) return ['bad','Low contrast, may not scan'];
+    if(worst<4.5) return ['warn','Contrast is borderline'];
+    if(S.margin<2) return ['warn','Quiet zone is thin'];
+    return ['ok','Scan-ready'];
+  }
+
+  /* ---------- update ---------- */
+  function update(){
+    syncControls();
+    var res=makeQR(), frame=$('#frame');
+    frame.classList.toggle('checker',S.transparent && !!res.qr);
+    if(!res.qr){
+      frame.innerHTML=''; var e=document.createElement('div'); e.className='empty'; e.textContent=res.err; frame.appendChild(e);
+      $('#info').textContent=''; $('#bytes').textContent=''; current.ok=false;
+      var b=$('#badge'); b.className='badge warn'; b.lastElementChild.textContent='Waiting for content'; return;
+    }
+    var n=res.qr.getModuleCount();
+    frame.innerHTML=buildSVG(res.qr,0);
+    current={ok:true,qr:res.qr};
+    $('#info').textContent='Version '+((n-17)/4)+' · '+n+'×'+n+' modules · ECC '+effEcc();
+    $('#bytes').textContent=res.bytes+' bytes';
+    var h=health(), bd=$('#badge'); bd.className='badge '+h[0]; bd.lastElementChild.textContent=h[1];
+  }
+
+  /* ---------- events ---------- */
+  $$('.seg').forEach(function(seg){
+    Array.prototype.forEach.call(seg.querySelectorAll('button'),function(b){
+      b.type='button';
+      b.addEventListener('click',function(){
+        var k=seg.dataset.key; S[k]=(k==='size')?parseInt(b.dataset.v,10):b.dataset.v; update();
+      });
+    });
+  });
+  ['fg1','fg2','eyeColor','bg'].forEach(function(k){
+    $('#'+k).addEventListener('input',function(e){ S[k]=e.target.value; S.preset=-1; if(k==='fg1'&&S.eyeMatch) S.eyeColor=e.target.value; update(); });
+  });
+  [['grad'],['eyeMatch'],['transparent']].forEach(function(a){
+    $('#'+a[0]).addEventListener('change',function(e){ S[a[0]]=e.target.checked; S.preset=-1; update(); });
+  });
+  $('#margin').addEventListener('input',function(e){ S.margin=parseInt(e.target.value,10); update(); });
+  $('#logoScale').addEventListener('input',function(e){ S.logoScale=parseInt(e.target.value,10); update(); });
+  $('#logoBtn').addEventListener('click',function(){ $('#logoFile').click(); });
+  $('#logoClear').addEventListener('click',function(){ S.logo=null; $('#logoFile').value=''; update(); });
+  $('#logoFile').addEventListener('change',function(e){
+    var f=e.target.files&&e.target.files[0]; if(!f) return;
+    if(f.size>3*1024*1024){ toast('Choose a logo under 3 MB.'); return; }
+    var rd=new FileReader(); rd.onload=function(){ S.logo=rd.result; update(); }; rd.readAsDataURL(f);
+  });
+
+  var tt; function toast(msg){ var t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(function(){t.classList.remove('show');},2800); }
+
+  function rasterize(px){
+    return new Promise(function(res,rej){
+      var svg=buildSVG(current.qr,px), img=new Image();
+      img.onload=function(){
+        var cv=document.createElement('canvas'); cv.width=px; cv.height=px;
+        var ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,px,px);
+        cv.toBlob(function(b){ b?res(b):rej(new Error('Could not create image')); },'image/png');
+      };
+      img.onerror=function(){ rej(new Error('Could not render image')); };
+      img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    });
+  }
+  function save(name,data){
+    if(!DL){ toast('Saving is unavailable in this view. Use Copy SVG code instead.'); return Promise.resolve(); }
+    return DL.save({filename:name,data:data}).then(function(){ toast('Saved '+name); },function(e){
+      if(e&&e.code==='declined') return;
+      toast('Could not save: '+((e&&e.message)||'try again'));
+    });
+  }
+  $('#dlPng').addEventListener('click',function(){
+    if(!current.ok){ toast('Add content first.'); return; }
+    rasterize(S.size).then(function(b){ return save('qr-code-'+S.size+'.png',b); }).catch(function(e){ toast(e.message); });
+  });
+  $('#dlSvg').addEventListener('click',function(){
+    if(!current.ok){ toast('Add content first.'); return; }
+    save('qr-code.svg',buildSVG(current.qr,1024));
+  });
+  $('#copySvg').addEventListener('click',function(){
+    if(!current.ok){ toast('Add content first.'); return; }
+    var s=buildSVG(current.qr,1024);
+    try{ navigator.clipboard.writeText(s).then(function(){toast('SVG code copied');},function(){toast('Copy was blocked by the browser.');}); }
+    catch(e){ toast('Copy was blocked by the browser.'); }
+  });
+
+  /* downloads capability lights up later; hide the file buttons if absent */
+  if(window.claude && claude.use){
+    claude.use('downloads').then(function(d){
+      DL=d;
+      if(!d){ $('#dlPng').hidden=true; $('#dlSvg').hidden=true; $('#copySvg').classList.remove('full'); $('#copySvg').parentNode.style.gridTemplateColumns='1fr'; }
+    }).catch(function(){});
+  }
+
+  renderTabs(); renderFields(); renderSwatches(); update();
+})();
+</script>
+</body>
+</html>
